@@ -19,6 +19,8 @@ equals to the specification
 
 Every Kubernetes object contains a **system-generated UID** in order to been distinguished from the other entities of the system.
 
+---
+
 ### Kubectl
 Kubectl is the primary tool used to interact with the Kubernetes cluster from the command line. A `kubectl` execution
 consists of a command, a resource type, a resource name and some optional flags:  
@@ -81,5 +83,202 @@ behaves like the `create`, but the YAML manifest will need to contain a full def
 kubectl apply -f pod.yaml
 ```
 
+---
 
 ### Pods
+The most important primitive in the whole Kubernetes API set is the **Pod**. A Pod permits to run a containerized application
+that can consumes other services (like persistent storage, configuration data, and so on) using other mediator object.  
+A container permits to package an application in a single unit of software, including its runtime environment and a
+configuration. The unit of software usually includes the OS, the application source code (or the binary), the needed
+dependencies and other system tools. Its main goal is to decouple the runtime environment from the application, making 
+the application portable and installable in every environment.  
+The process of construct a bundle of the application in a container is defined as **containerization**. This process works
+based on instructions defined in a particular file, called **Dockerfile**. The Dockerfile explicitly define what mst happens
+when the software is built, generating a particular result named **image**. The image is usually published in a **registry**
+for consumption by other stakeholders.
+
+![containerization_process.png](images/01/containerization_process.png)
+
+So, the Dockerfile is a blueprint of how the software should be built, the image is the artifact produced by the process 
+and the container is an running instance of the image.  
+The Pod definition needs to refers to an existing image for every container. Before creating the Pod object, the container
+runtime engine will check if the image already exists locally. If the image does not exists yet, the engine will download
+it frm the container image registry. As soon as the image exists on the node, the container is instantiated and run.  
+
+![container_runtime_engine.png](images/01/container_runtime_engine.png)
+
+
+#### Create a pod
+In order to create a Pod imperatively, the `run` commands permits to do so:
+```
+kubectl run podname --image=pod/podimage --restart=Never --port=5701 --env="SOMEENV=someval" --labels="app=podname,env=prod"
+```
+Where the options are made for:
+ - `--image`: the image to run for generating the container
+ - `--port`: the port that this container exposes
+ - `--rm`: deletes the pod after the command in the container finishes
+ - `--env`: the environment variables to set in the container
+ - `--labels`: the list of labels separated by a comma
+
+In the same way, it is possible to create a Pod in declarative approach with a YAML file:  
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podname
+  labels:
+    app: podname
+    env: prod
+spec:
+  containers:
+  - env:
+    - name: SOMEENV
+      value: somevalue
+    image: pod/podimage
+    name: podname
+    ports:
+    - containerPort: 5701
+  restartPolicy: Never
+```
+
+And executing the `create` or `apply` command using this file:
+```
+kubectl create -f pod.yaml
+```
+
+
+#### Inspect a pod
+It is possible to show the information of one or more pods with `kubectl` command with `get` command:
+```
+kubectl get pods
+```
+The results can be also queried by name:
+```
+kubectl get pods podname
+```
+If a deeper look at the details is needed the `described` command can be used:
+```
+kubectl describe pods podname
+```
+It is also possible to download the log output of a container with `logs` command, including the option `-f` to stream them:
+```
+kubectl logs podname [-f]
+```
+After the container restart, it is not possible to have access to the logs of the previous container anymore: the `logs` 
+command only renders the logs for the current container. However, it is still possible to get back the logs of the 
+previous container by adding the `-p` command line option.  
+It is possible to open a shell in the container in order to explore it interactively wit the `exec` command:
+```
+kubectl exec -it podname -- bin/sh echo "Hello World"
+```
+The two dashes (--) separate the `exec` command and its options from the command you want to run inside of the container.
+
+
+#### Inspect a pod
+If is needed to delete a pod, the `delete` command permits to do so:
+```
+kubectl delete pod podname
+```
+A declarative way to do se is the following:
+```
+kubectl delete -f pod.yaml
+```
+Kubernetes tries to delete a Pod gracefully, meaning that the Pod will try to finish active requests to the Pod in order to 
+avoid unnecessary disruption to the end user. A graceful deletion operation can take anywhere from 5-30 seconds.
+
+
+#### Pod life cycle
+Because Kubernetes is an engine with asynchronous control loops, it is possible that the status of the Pod doesn’t show 
+a Running status right away when listing the Pods. It usually takes a couple of seconds to retrieve the image and effectively
+start the container. 
+
+![pod_lyfe_cycle_phases.png](images/01/pod_life_cycle_phases.png)
+
+The accepted phases are:
+ - **Pending**: The Pod has been accepted by the Kubernetes system, but one or more of the container images has not been created.
+ - **Running**: At least one container is still running, or is in the process of starting or restarting.
+ - **Succeded**: All containers in the Pod terminated successfully.
+ - **Failed**: Containers in the Pod terminated, as least one failed with an error.
+ - **Unknown**: The state of Pod could not be retrieved.
+
+#### Configure a pod
+In order to expose a way to make application runtime behavior configurable, the environment variables are a common option 
+to provide this setting. For doing so, the section `env` of a container must be updated with needed parameters. 
+Every environment variable consists of a key-value pair, represented respectively by the attributes name and value. It’s 
+recommended to follow the Kubernetes standard of using upper-case letters and the underscore character (_) to separate words.
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-name
+spec:
+  containers:
+  - image: somedomain/some-image:1.0.0
+    name: somepod
+    env:
+    - name: AN_ENV_PARAMETER
+      value: 'abcd'
+    - name: ANOTHERENV_PARAMETER
+      value: '1234'
+```
+Many container images already define an `ENTRYPOINT` or `CMD` instruction. The command assigned to the instruction is 
+automatically executed as part of the container startup process. In a Pod definition, it can be either redefined 
+the image `ENTRYPOINT` and `CMD` instructions or assign a command to execute for the container (if it hasn't been specified 
+by the image). The `command` attribute overrides the image’s `ENTRYPOINT` instruction and the `args` attribute replaces the 
+`CMD` instruction of an image.
+```
+kubectl run podname --images=somedomain/some-image -o yaml --restart=Never > pod.yaml -- /bin/sh -c "while true; echo "Hello"; sleep 10; done"
+```
+The same way in declarative mode, with `args` instruction:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podname
+spec:
+  containers:
+  - args:
+    - /bin/sh
+    - -c
+    - while true; echo "Hello"; sleep 10; done
+    image: somedomain/some-image
+    name: podname
+  restartPolicy: Never
+```
+or with a combination of `args` and `command` instructions:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podname
+spec:
+  containers:
+  - command: ["/bin/sh"]
+    args: ["-c", "while true; echo "Hello"; sleep 10; done"]
+    image: somedomain/some-image
+    name: podname
+  restartPolicy: Never
+```
+
+
+### Namespace
+Namespaces are an API construct used to avoid naming collisions and represent a scope for object names. A good use case 
+for namespaces is to isolate the objects by team or responsibility.  
+To create a new namespace, it is possible to use the `create namespace` command in imperative mode:
+```
+crete namespace namespace-name
+``` 
+It is possible to list them with `get` command:
+```
+kubectl get namespaces
+```
+There exists a `default` namespace hosts object that haven’t been assigned to an explicit namespace and a set of namespaces 
+that starts with the prefix `kube-`. Those are not considered as end user-namespaces (they have been created by the Kubernetes 
+system), therefore must not be used for development purpose.
+Once the namespace is in place, you can create objects within it with the command line option `--namespace` or its
+short-form `-n`.
+```
+kubectl run podname --image=somedomain/some-image --restart=Never -n namespace-name
+kubectl get pods -n namespace-name
+```
