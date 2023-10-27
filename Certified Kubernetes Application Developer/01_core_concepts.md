@@ -1,8 +1,9 @@
 # Certified Kubernetes Application Developer  
 
+[Previous](00_main.md) | [Next](02_configuration.md)
+
 ---
 
-[Previous](00_main.md) | [Next](02_configuration.md)
 
 ## Primitive
 A **primitive** in Kubernetes is a basic building block in the whole architecture used for creating and operating an

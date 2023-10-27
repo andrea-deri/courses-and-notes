@@ -1,8 +1,9 @@
 # Certified Kubernetes Application Developer
 
+[Next](01_core_concepts.md)
+
 ---
 
-[Next](01_core_concepts.md)
 
 ## Description
 This notes 
