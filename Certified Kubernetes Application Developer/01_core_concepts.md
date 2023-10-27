@@ -215,7 +215,8 @@ Parameters:
 
    ```kubectl delete -f pod.yaml```
 
-> [!NOTE] **Pod deletion**  
+> [!NOTE]  
+> **Pod deletion**  
 > Kubernetes tries to delete a Pod gracefully, meaning that the Pod will try to finish active requests to the Pod in order to
 > avoid unnecessary disruption to the end user. A graceful deletion operation can take anywhere from 5-30 seconds.
 > For a violent deletion of the pod, it is necessary to append the flags `--grace-period=0 --force`
@@ -239,7 +240,8 @@ Parameters:
 
    ```kubectl logs podname [-f]```
 
-> [!NOTE] **Logs lifecycle**  
+> [!NOTE]  
+> **Logs lifecycle**  
 > After the container restart, it is not possible to have access to the logs of the previous container anymore: the `logs` 
 > command only renders the logs for the current container. However, it is still possible to get back the logs of the
 > previous container by adding the `-p` command line option.
@@ -290,7 +292,8 @@ Parameters:
      restartPolicy: Never
    ```
 
-> [!NOTE] **Entrypoint and command**  
+> [!NOTE]  
+> **Entrypoint and command**  
 > Many container images already define an `ENTRYPOINT` or `CMD` instruction. The command assigned to the instruction is
 > automatically executed as part of the container startup process. In a Pod definition, it can be either redefined
 > the image `ENTRYPOINT` and `CMD` instructions or assign a command to execute for the container (if it hasn't been specified 
@@ -308,7 +311,8 @@ Parameters:
 
    ```kubectl get namespaces```
 
-> [!NOTE] **Entrypoint and command**  
+> [!NOTE]  
+> **Entrypoint and command**  
 > Once the namespace is in place, you can create objects within it with the command line option `--namespace` or its 
 > short-form `-n`.
 > ```
