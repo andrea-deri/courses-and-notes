@@ -16,11 +16,12 @@ Every Kubernetes primitive follows a general structure:
  - **Metadata**: the information of the object in a higher-level format 
  - **Spec**: the specifications wanted to be reached after the creation
  - **Status**: the actual status defined currently in an object, that the Kubernetes controllers try to edit in order to make it 
-equals to the specification
+equals to the specification.  
+
+Every Kubernetes object contains a **system-generated UID** in order to been distinguished from the other entities of the system.
 
 ![yaml_manifest.png](images/01/yaml_manifest.png)  
 
-Every Kubernetes object contains a **system-generated UID** in order to been distinguished from the other entities of the system.
 
 
 ## Pods
@@ -37,7 +38,7 @@ for consumption by other stakeholders.
 
 ![containerization_process.png](images/01/containerization_process.png)
 
-So, the Dockerfile is a blueprint of how the software should be built, the image is the artifact produced by the process
+So, the **Dockerfile** is a blueprint of how the software should be built, the image is the artifact produced by the process
 and the container is an running instance of the image.  
 The Pod definition needs to refers to an existing image for every container. Before creating the Pod object, the container
 runtime engine will check if the image already exists locally. If the image does not exists yet, the engine will download
@@ -83,7 +84,7 @@ spec:
 ```
 
 
-### Namespace
+## Namespace
 **Namespaces** are an API construct used to avoid naming collisions and represent a scope for object names. A good use case
 for namespaces is to isolate the objects by team or responsibility.  
 There exists a `default` namespace hosts object that haven’t been assigned to an explicit namespace and a set of namespaces
@@ -149,7 +150,8 @@ The object in a Kubernetes cluster can be defined in two different ways:
    
    ```kubect replace -f pod.yaml```
 
-> [!NOTE] **Difference between create and apply**  
+> [!NOTE]  
+> **Difference between create and apply**  
 > The `create` command instantiates a new object: try to execute it for an existing object will produce an error.
 > The `apply` command is meant to update an existing object in its entirety or just incrementally. So, the provided YAML manifest 
 > can be either a full definition of an object or a partial definition. If the object doesn’t exist yet, the `apply` command 
